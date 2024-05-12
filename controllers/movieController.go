@@ -3,9 +3,9 @@ package controllers
 import (
 	"encoding/json"
 	"io"
+	"log"
 	"net/http"
 	"os"
-	"log"
 	m "ratings/models"
 
 	"gopkg.in/yaml.v3"
@@ -13,6 +13,7 @@ import (
 
 const baseUrl = "https://api.kinopoisk.dev/v1.4"
 const randomMovieUrl = baseUrl + "/movie/random"
+
 var key string
 
 func RandomMovie() m.Movie {
@@ -21,6 +22,11 @@ func RandomMovie() m.Movie {
 	req, err := http.NewRequest("GET", randomMovieUrl, nil)
 	req.Header.Add("X-API-KEY", getApiKey())
 	req.Header.Add("Accept", "application/json")
+
+	q := req.URL.Query()
+	q.Add("notNullFields", "name")
+	
+	req.URL.RawQuery = q.Encode()
 
 	if err != nil {
 		log.Fatalln(err)
