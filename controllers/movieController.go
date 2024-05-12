@@ -2,32 +2,33 @@ package controllers
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 	"os"
+	"log"
 	m "ratings/models"
 
 	"gopkg.in/yaml.v3"
 )
 
-// TODO: handle error with logger
-func RandomMovie() *m.Movie {
+const baseUrl = "https://api.kinopoisk.dev/v1.4"
+const randomMovieUrl = baseUrl + "/movie/random"
+var key string
+
+func RandomMovie() m.Movie {
 	client := &http.Client{}
 
-	req, err := http.NewRequest("GET", "https://api.kinopoisk.dev/v1.4/movie/random", nil)
+	req, err := http.NewRequest("GET", randomMovieUrl, nil)
 	req.Header.Add("X-API-KEY", getApiKey())
 	req.Header.Add("Accept", "application/json")
 
 	if err != nil {
-		fmt.Println(err)
-		return nil
+		log.Fatalln(err)
 	}
 
 	resp, err := client.Do(req)
 	if err != nil {
-		fmt.Println(err)
-		return nil
+		log.Fatalln(err)
 	}
 
 	defer resp.Body.Close()
@@ -37,29 +38,29 @@ func RandomMovie() *m.Movie {
 	body, err := io.ReadAll(resp.Body)
 	result := json.Unmarshal(body, &movie)
 	if result != nil {
-		fmt.Println(err)
-		return nil
+		log.Fatalln(err)
 	}
 
-	return &movie
+	return movie
 }
 
-// TODO: readfile one time
-// TODO: change to struct
 func getApiKey() string {
-	config := make(map[string]interface{})
+	if key != "" {
+		return key
+	} else {
+		config := make(map[string]interface{})
 
-	yamlFile, err := os.ReadFile("config.yaml")
-	if err != nil {
-		fmt.Println(err)
-		return ""
+		yamlFile, err := os.ReadFile("config.yaml")
+		if err != nil {
+			log.Fatalln(err)
+		}
+
+		err = yaml.Unmarshal(yamlFile, &config)
+		if err != nil {
+			log.Fatalln(err)
+		}
+		key = config["configuration"].(map[string]interface{})["kinopoiskApiKey"].(string)
+
+		return key
 	}
-
-	err = yaml.Unmarshal(yamlFile, &config)
-	if err != nil {
-		fmt.Println(err)
-		return ""
-	}
-
-	return config["configuration"].(map[string]interface{})["kinopoiskApiKey"].(string)
 }
